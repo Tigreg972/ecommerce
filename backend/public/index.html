@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Althea Systems — Boutique</title>
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/">
+        <span class="brand-dot"></span>
+        <span>Althea Systems</span>
+      </a>
+
+      <nav class="nav">
+        <a href="/" aria-current="page">Accueil</a>
+        <a href="/cart.html" class="cart-link">
+          Panier
+          <span id="cartCount" class="cart-badge">0</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div class="hero-left">
+          <h1>Solutions & équipements médicaux de pointe</h1>
+          <p class="muted" id="homeText">Chargement…</p>
+          <div class="hero-actions">
+            <a class="btn" href="#categories">Explorer les catégories</a>
+            <a class="btn btn-ghost" href="#featured">Top produits</a>
+          </div>
+        </div>
+        <div class="hero-right" aria-hidden="true">
+          <div class="hero-card">
+            <div class="hero-icon">🩺</div>
+            <div class="hero-title">Qualité • Sécurité • Conformité</div>
+            <div class="muted">Matériel pensé pour les cabinets médicaux.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>À la une</h2>
+        <div id="carousel" class="carousel" aria-label="Carrousel accueil"></div>
+      </section>
+
+      <section class="section" id="categories">
+        <h2>Catégories</h2>
+        <div id="catGrid" class="grid"></div>
+      </section>
+
+      <section class="section" id="featured">
+        <h2>Top produits</h2>
+        <div id="featuredGrid" class="grid"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="muted">© Althea Systems — Démo e-commerce (projet pédagogique)</div>
+      </div>
+    </footer>
+
+    <script type="module" src="/assets/js/home.js"></script>
+  </body>
+</html>

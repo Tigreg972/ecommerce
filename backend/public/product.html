@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Althea Systems — Produit</title>
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/"><span class="brand-dot"></span><span>Althea Systems</span></a>
+      <nav class="nav">
+        <a href="/">Accueil</a>
+        <a href="/cart.html" class="cart-link">
+          Panier
+          <span id="cartCount" class="cart-badge">0</span>
+        </a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="product-layout section">
+        <div class="product-gallery">
+          <div id="galleryMain" class="gallery-main">🩺</div>
+          <div id="galleryThumbs" class="gallery-thumbs"></div>
+        </div>
+
+        <div class="product-info">
+          <div class="muted" id="productCategory"></div>
+          <h1 id="productName">Produit</h1>
+          <div class="price" id="productPrice"></div>
+          <div class="muted" id="productStock"></div>
+
+          <p id="productShort"></p>
+
+          <div class="product-actions">
+            <label class="qty-box">
+              <span>Quantité</span>
+              <input id="quantityInput" type="number" min="1" value="1" />
+            </label>
+            <button id="addToCartBtn" class="btn" type="button">Ajouter au panier</button>
+          </div>
+
+          <div id="addToCartMsg" class="muted add-cart-msg"></div>
+
+          <div class="card tech">
+            <h3>Caractéristiques techniques</h3>
+            <pre id="productSpecs"></pre>
+          </div>
+
+          <div class="card">
+            <h3>Description</h3>
+            <p id="productDesc" class="muted"></p>
+          </div>
+
+          <a id="backToCat" class="btn btn-ghost" href="/">← Retour</a>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/assets/js/product.js"></script>
+  </body>
+</html>
