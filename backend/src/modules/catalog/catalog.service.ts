@@ -8,19 +8,76 @@ import { HomeCarouselSlide } from './entities/home-carousel-slide.entity';
 import { HomeText } from './entities/home-text.entity';
 import { FeaturedProduct } from './entities/featured-product.entity';
 import { QueryProductsDto } from './dto/query-products.dto';
+import { buildMediaUrl } from './utils/media-url.util';
 
 @Injectable()
 export class CatalogService {
+  private readonly apiBaseUrl = (
+    process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3001}`
+  ).replace(/\/$/, '');
+
   constructor(
-    @InjectRepository(Category) private readonly categoriesRepo: Repository<Category>,
-    @InjectRepository(Product) private readonly productsRepo: Repository<Product>,
-    @InjectRepository(HomeCarouselSlide) private readonly slidesRepo: Repository<HomeCarouselSlide>,
-    @InjectRepository(HomeText) private readonly homeTextRepo: Repository<HomeText>,
-    @InjectRepository(FeaturedProduct) private readonly featuredRepo: Repository<FeaturedProduct>,
+    @InjectRepository(Category)
+    private readonly categoriesRepo: Repository<Category>,
+
+    @InjectRepository(Product)
+    private readonly productsRepo: Repository<Product>,
+
+    @InjectRepository(HomeCarouselSlide)
+    private readonly slidesRepo: Repository<HomeCarouselSlide>,
+
+    @InjectRepository(HomeText)
+    private readonly homeTextRepo: Repository<HomeText>,
+
+    @InjectRepository(FeaturedProduct)
+    private readonly featuredRepo: Repository<FeaturedProduct>,
   ) {}
 
   ping() {
     return { ok: true, module: 'catalog' };
+  }
+
+  private normalizeCategory(category: Category | null | undefined) {
+    if (!category) {
+      return null;
+    }
+
+    return {
+      ...category,
+      imageUrl: buildMediaUrl(category.imageUrl, this.apiBaseUrl),
+    };
+  }
+
+  private normalizeSlide(slide: HomeCarouselSlide | null | undefined) {
+    if (!slide) {
+      return null;
+    }
+
+    return {
+      ...slide,
+      imageUrl: buildMediaUrl(slide.imageUrl, this.apiBaseUrl),
+    };
+  }
+
+  private normalizeProduct(product: Product | null | undefined) {
+    if (!product) {
+      return null;
+    }
+
+    const normalizedImages = (product.images || [])
+      .slice()
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+      .map((image) => ({
+        ...image,
+        url: buildMediaUrl(image.url, this.apiBaseUrl),
+      }));
+
+    return {
+      ...product,
+      category: product.category ? this.normalizeCategory(product.category) : product.category,
+      images: normalizedImages,
+      imageUrl: normalizedImages[0]?.url ?? null,
+    };
   }
 
   async home() {
@@ -44,6 +101,7 @@ export class CatalogService {
     });
 
     const featuredIds = featured.map((f) => f.productId);
+
     const featuredProducts = featuredIds.length
       ? await this.productsRepo.find({
           where: featuredIds.map((id) => ({ id, isActive: true })),
@@ -51,24 +109,30 @@ export class CatalogService {
         })
       : [];
 
-    
-    const featuredMap = new Map(featuredProducts.map((p) => [p.id, p]));
-    const featuredOrdered = featuredIds.map((id) => featuredMap.get(id)).filter(Boolean);
+    const featuredMap = new Map(
+      featuredProducts.map((product) => [product.id, this.normalizeProduct(product)]),
+    );
+
+    const featuredOrdered = featuredIds
+      .map((id) => featuredMap.get(id))
+      .filter(Boolean);
 
     return {
-      slides,
+      slides: slides.map((slide) => this.normalizeSlide(slide)),
       homeText: homeText?.content ?? '',
-      categories,
+      categories: categories.map((category) => this.normalizeCategory(category)),
       featured: featuredOrdered,
     };
   }
 
   async listCategories() {
-    return this.categoriesRepo.find({ order: { displayOrder: 'ASC', name: 'ASC' } });
+    const categories = await this.categoriesRepo.find({
+      order: { displayOrder: 'ASC', name: 'ASC' },
+    });
+
+    return categories.map((category) => this.normalizeCategory(category));
   }
 
-  
-   
   async listProducts(query: QueryProductsDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 12;
@@ -90,23 +154,21 @@ export class CatalogService {
     if (typeof query.minPriceCents === 'number') {
       qb.andWhere('p.priceCents >= :minp', { minp: query.minPriceCents });
     }
+
     if (typeof query.maxPriceCents === 'number') {
       qb.andWhere('p.priceCents <= :maxp', { maxp: query.maxPriceCents });
     }
 
     const q = query.q?.trim();
     if (q) {
-     
       qb.andWhere(
         '(p.name LIKE :q OR p.description LIKE :q OR p.techSpecs LIKE :q)',
         { q: `%${q}%` },
       );
     }
 
-    
     qb.addSelect('CASE WHEN p.stock > 0 THEN 1 ELSE 0 END', 'inStockRank');
 
-    
     switch (query.sort) {
       case 'price_asc':
         qb.orderBy('p.priceCents', 'ASC');
@@ -123,17 +185,16 @@ export class CatalogService {
       case 'priority':
       case 'relevance':
       default:
-       
         qb.orderBy('p.priority', 'DESC')
           .addOrderBy('inStockRank', 'DESC')
           .addOrderBy('p.name', 'ASC');
         break;
     }
 
-    
     qb.addOrderBy('img.displayOrder', 'ASC');
 
     const total = await qb.getCount();
+
     const items = await qb
       .skip((page - 1) * pageSize)
       .take(pageSize)
@@ -141,17 +202,29 @@ export class CatalogService {
 
     const totalPages = Math.ceil(total / pageSize);
 
-    return { items, page, pageSize, total, totalPages };
+    return {
+      items: items.map((item) => this.normalizeProduct(item)),
+      page,
+      pageSize,
+      total,
+      totalPages,
+    };
   }
 
   async getProductBySlug(slug: string) {
-    return this.productsRepo.findOne({
+    const product = await this.productsRepo.findOne({
       where: { slug, isActive: true },
       relations: ['category', 'images'],
     });
+
+    return this.normalizeProduct(product);
   }
 
   async getCategoryBySlug(slug: string) {
-    return this.categoriesRepo.findOne({ where: { slug } });
+    const category = await this.categoriesRepo.findOne({
+      where: { slug },
+    });
+
+    return this.normalizeCategory(category);
   }
 }
